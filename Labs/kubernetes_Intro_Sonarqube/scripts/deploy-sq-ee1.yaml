@@ -1,0 +1,155 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sonarqube
+    deploymentName: sonarqube01-deployment01
+  name: sonarqube01-deployment01
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarqube
+      deploymentName: sonarqube01-deployment01
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: sonarqube
+        deploymentName: sonarqube01-deployment01
+      name: sonarqube
+    spec:
+      automountServiceAccountToken: true
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: sonarqube-config
+            optional: true 
+        image: sonarqube:9.9-enterprise
+        imagePullPolicy: IfNotPresent
+        name: sonarqube
+        ports:
+        - containerPort: 9000
+          protocol: TCP
+        envFrom:
+          - configMapRef:
+              name: sonarqube-config
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: true
+          privileged: true
+          readOnlyRootFilesystem: false
+          runAsGroup: 1000
+          runAsNonRoot: false
+          runAsUser: 1000
+        volumeMounts:
+        - mountPath: /opt/sonarqube/data
+          mountPropagation: None
+          name: sonarqube-data
+        - mountPath: /opt/sonarqube/logs
+          mountPropagation: None
+          name: sonarqube-logs
+        - mountPath: /opt/sonarqube/extensions
+          mountPropagation: None
+          name: sonarqube-ext
+      enableServiceLinks: true
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - sysctl -w vm.max_map_count=262144
+        image: busybox:1.32
+        imagePullPolicy: IfNotPresent
+        name: sonarqube-es-init
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: true
+          privileged: true
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 0
+      - command:
+        - /bin/sh
+        - -c
+        - mkdir -p /opt/sonarqube/extensions/jdbc-driver/oracle && wget -O /opt/sonarqube/extensions/jdbc-driver/oracle/ojdbc11.jar  https://download.oracle.com/otn-pub/otn_software/jdbc/217/ojdbc11.jar
+          && chown -R 1000:1000 /opt/sonarqube/extensions && chmod -R 777 /opt/sonarqube/extensions
+        image: busybox:1.32
+        imagePullPolicy: IfNotPresent
+        name: sonarqube-es-init2
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: true
+          privileged: true
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /opt/sonarqube/extensions
+          mountPropagation: None
+          name: sonarqube-ext
+      - command:
+        - /bin/sh
+        - -c
+        - chown -R 1000:1000 /opt/sonarqube/data && chmod -R 777 /opt/sonarqube/data
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        name: sonarqube-es-init3
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: true
+          privileged: true
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /opt/sonarqube/data
+          mountPropagation: None
+          name: sonarqube-data
+      - command:
+        - /bin/sh
+        - -c
+        - chown -R 1000:1000 /opt/sonarqube/logs && chmod -R 777 /opt/sonarqube/logs
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        name: sonarqube-es-init4
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: true
+          privileged: true
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /opt/sonarqube/logs
+          mountPropagation: None
+          name: sonarqube-logs
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: false
+        runAsUser: 1000
+      shareProcessNamespace: false
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: sonarqube-data
+        persistentVolumeClaim:
+          claimName: sonarqube-data
+      - name: sonarqube-logs
+        persistentVolumeClaim:
+          claimName: sonarqube-logs
+      - name: sonarqube-ext
+        persistentVolumeClaim:
+          claimName: sonarqube-ext
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube-svc1 
+  labels:
+    app: sonarqube
+spec:
+  type: LoadBalancer 
+  ports:
+   - port: 9000
+  selector:
+   app: sonarqube
+

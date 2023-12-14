@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+ name: se.sonarlab-com-cert
+spec:
+ secretName: se.sonarlab-com-cert-secret
+ isCA: true
+ commonName: '*.se.sonarlab.com'
+ dnsNames:
+  - se.sonarlab.com
+  - '*.se.sonarlab.com'
+ issuerRef:
+  name: se.sonarlab-ca-issuer
+  kind: ClusterIssuer

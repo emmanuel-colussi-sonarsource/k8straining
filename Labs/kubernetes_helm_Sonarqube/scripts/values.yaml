@@ -1,0 +1,17 @@
+service:
+  type: LoadBalancer 
+  externalPort: 8001
+  internalPort: 9000
+  labels:
+  annotations: {}
+
+ApplicationNodes:
+ replicaCount: 1 
+
+postgresql:
+ persistence:
+    storageClass: partner-sc 
+
+searchNodes:
+ persistence:
+  storageClass: partner-sc
